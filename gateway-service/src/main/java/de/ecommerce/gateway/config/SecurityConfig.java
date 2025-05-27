@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
-                        .pathMatchers("/user/**").hasRole("USER")
+                        .pathMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/admin/**").hasRole("ADMIN")
                         .anyExchange().authenticated()
                 )
@@ -42,7 +42,8 @@ public class SecurityConfig {
 
     private ReactiveJwtAuthenticationConverterAdapter grantedAuthoritiesExtractor() {
         JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthoritiesClaimName("roles");
+        converter.setAuthoritiesClaimName("role");
+        converter.setAuthorityPrefix("");
 
         JwtAuthenticationConverter authConverter = new JwtAuthenticationConverter();
         authConverter.setJwtGrantedAuthoritiesConverter(converter);
