@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - AddResponseHeader=X-Gateway-Service, EgorS-Gateway
+      routes:
+        - id: security-service
+          uri: lb://security-service
+          predicates:
+            - Path=/auth/login, /auth/register
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: classpath:public.pem
