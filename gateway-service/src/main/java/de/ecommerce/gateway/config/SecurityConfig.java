@@ -28,6 +28,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
                         .pathMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/admin/**").hasRole("ADMIN")
+                        .pathMatchers(HttpMethod.GET, "/auth/kafka/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(ex -> ex

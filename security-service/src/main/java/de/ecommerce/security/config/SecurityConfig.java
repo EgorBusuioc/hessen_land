@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize ->
                         authorize
                                 .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/auth/kafka/**").permitAll()
                                 .anyRequest().authenticated());
         return http.build();
     }

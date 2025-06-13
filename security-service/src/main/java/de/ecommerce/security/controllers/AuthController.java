@@ -5,13 +5,11 @@ import de.ecommerce.security.models.User;
 import de.ecommerce.security.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,7 +43,14 @@ public class AuthController {
             }
             return ResponseEntity.badRequest().body(builder.toString());
         }
-        authService.registerNewUser(user);
+
+        try {
+            authService.registerNewUser(user);
+        }
+        catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
         return ResponseEntity.ok("User registered successfully");
     }
 
@@ -63,6 +68,16 @@ public class AuthController {
         }
         catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid email or password");
+        }
+    }
+
+    @GetMapping("/kafka/{userId}")
+    public ResponseEntity<?> tryKafta(@PathVariable String userId) {
+        try {
+            authService.sendUserToKafka(userId);
+            return ResponseEntity.ok("User sent to Kafka successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send user to Kafka");
         }
     }
 }

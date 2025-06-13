@@ -63,8 +63,7 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     Role role;
 
-    @PrePersist
-    private void init(){
+    public void init(){
         ULID ulid = new ULID();
         this.userId = ulid.nextULID();
         creationDate = LocalDateTime.now();

@@ -32,5 +32,5 @@ public class User {
     private String phoneNumber = null;
 
     @Column(name = "is_landlord")
-    private boolean isLandlord;
+    private boolean isLandlord = false;
 }

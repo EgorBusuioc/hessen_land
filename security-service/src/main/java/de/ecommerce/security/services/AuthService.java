@@ -7,11 +7,15 @@ import de.ecommerce.security.repositories.UserRepository;
 import de.ecommerce.security.token.JWTUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author EgorBusuioc
@@ -27,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JWTUtils jwtUtils;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
      * Registers a new user in the system.
@@ -39,13 +44,15 @@ public class AuthService {
      * @throws IllegalArgumentException\ if a user with the same email already exists
      */
     @Transactional
-    public void registerNewUser(User user) {
+    public void registerNewUser(User user) throws RuntimeException{
 
         if (userRepository.findByEmail(user.getEmail()).isPresent())
             throw new IllegalArgumentException("A user with this email already exists.");
 
         user.setRole(Role.ROLE_USER); // Set the user as USER by default
         user.setPassword(passwordEncoder.encode(user.getPassword())); // Encoding the password
+        user.init();
+        sendUserToKafka(user.getUserId());
         userRepository.save(user); // Saving the user into the database
         log.info("User created: Email: {}", user.getEmail());
     }
@@ -74,5 +81,17 @@ public class AuthService {
             log.error("Authentication failed for user: {}", loginRequest.getEmail());
             throw new IllegalArgumentException("Invalid email or password");
         }
+    }
+
+    public void sendUserToKafka(String userId) throws RuntimeException {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("user-topic", userId);
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("Failed to send user to Kafka topic: {}", ex.getMessage());
+                throw new RuntimeException("Failed to send user to Kafka topic");
+            } else {
+                log.info("User sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
+            }
+        });
     }
 }
