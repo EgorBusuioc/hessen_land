@@ -1,9 +1,12 @@
 package de.ecommerce.security.services;
 
+import de.ecommerce.security.dto.EmailRequest;
 import de.ecommerce.security.dto.LoginRequest;
+import de.ecommerce.security.models.PersonalUserToken;
 import de.ecommerce.security.models.User;
 import de.ecommerce.security.models.enums.Role;
 import de.ecommerce.security.repositories.UserRepository;
+import de.ecommerce.security.repositories.UserTokenRepository;
 import de.ecommerce.security.token.JWTUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +14,14 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,11 +33,14 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-
+    //TODO delete account if account is not activated and does not have any activation tokens.
     private final UserRepository userRepository;
+    private final UserTokenRepository userTokenRepository;
+
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JWTUtils jwtUtils;
+    private final RestTemplate restTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
@@ -44,17 +54,19 @@ public class AuthService {
      * @throws IllegalArgumentException\ if a user with the same email already exists
      */
     @Transactional
-    public void registerNewUser(User user) throws RuntimeException{
-
+    public void registerNewUser(User user) throws IllegalArgumentException{
         if (userRepository.findByEmail(user.getEmail()).isPresent())
             throw new IllegalArgumentException("A user with this email already exists.");
 
         user.setRole(Role.ROLE_USER); // Set the user as USER by default
         user.setPassword(passwordEncoder.encode(user.getPassword())); // Encoding the password
         user.init();
-        sendUserToKafka(user.getUserId());
+
+        //sendUserToKafka(user.getUserId());
         userRepository.save(user); // Saving the user into the database
         log.info("User created: Email: {}", user.getEmail());
+        sendActivationLink(user);
+        log.info("User's activation link has been sent to: {}", user.getEmail());
     }
 
     /**
@@ -68,19 +80,62 @@ public class AuthService {
      * @return a JWT token if authentication is successful
      * @throws IllegalArgumentException if authentication fails
      */
-    public String findExistingUserByEmail(LoginRequest loginRequest) {
+    public String findExistingUserByEmail(LoginRequest loginRequest){
         try {
             User user = (User) authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             ).getPrincipal();
+
             log.info("Authentication successful for user: {}", loginRequest.getEmail());
             log.info("User have been found: Email: {}", loginRequest.getEmail());
             log.info("JWT token generating...");
             return jwtUtils.generateToken(user);
         } catch (Exception e) {
-            log.error("Authentication failed for user: {}", loginRequest.getEmail());
+            log.warn("Authentication failed for user: {}", loginRequest.getEmail());
             throw new IllegalArgumentException("Invalid email or password");
         }
+    }
+
+    @Transactional
+    protected void sendActivationLink(User user) {
+        String token = UUID.randomUUID().toString();
+        PersonalUserToken personalUserToken = new PersonalUserToken(token, user);
+        user.setToken(personalUserToken);
+        userRepository.save(user);
+
+        log.info("Token generated and saved for user: {}", user.getEmail());
+
+        restTemplate.postForEntity("http://notification-service/mail/auth/activate-account", new EmailRequest(user.getEmail(), personalUserToken.getToken()), String.class);
+        log.info("Activation link sent to user: {}", user.getEmail());
+    }
+
+    @Transactional
+    public void validateActivationToken(String token) throws Exception {
+        final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);
+
+        if (!isTokenFound(passwordToken))
+            throw new UsernameNotFoundException("Token not found");
+
+        if (isTokenExpired(passwordToken)) {
+            log.error("Token expired for user: {}", passwordToken.getUser().getEmail());
+            throw new Exception("Token expired");
+        }
+
+        User user = passwordToken.getUser();
+        user.setActive(true); // Activate the user
+        user.setToken(null);
+        userRepository.save(user);
+        log.info("User has been activated: {}", user.getEmail());
+
+        log.info("Token has been removed from user: {}", passwordToken.getUser().getEmail());
+    }
+
+    private boolean isTokenFound(PersonalUserToken passwordToken) {
+        return passwordToken != null && passwordToken.getUser() != null;
+    }
+
+    private boolean isTokenExpired(PersonalUserToken passwordToken) {
+        return passwordToken.getExpirationDate().isBefore(LocalDateTime.now());
     }
 
     public void sendUserToKafka(String userId) throws RuntimeException {

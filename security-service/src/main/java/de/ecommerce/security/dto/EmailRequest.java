@@ -1,4 +1,4 @@
-package de.ecommerce.notification.dto;
+package de.ecommerce.security.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 /**
  * @author EgorBusuioc
- * 13.06.2025
+ * 14.06.2025
  */
 @AllArgsConstructor
 @Getter

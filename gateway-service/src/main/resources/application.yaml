@@ -13,7 +13,7 @@ spring:
         - id: security-service
           uri: lb://security-service
           predicates:
-            - Path=/auth/login, /auth/register, /auth/kafka/**
+            - Path=/auth/**
   security:
     oauth2:
       resourceserver:

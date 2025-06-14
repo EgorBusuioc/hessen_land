@@ -47,11 +47,12 @@ public class AuthController {
         try {
             authService.registerNewUser(user);
         }
-        catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
         }
 
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok("Activation link sent to your email. " +
+                "Please check your inbox and activate your account.");
     }
 
     /**
@@ -66,8 +67,18 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.findExistingUserByEmail(user));
         }
-        catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Invalid email or password");
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/password/activate-account")
+    public ResponseEntity<String> activateUser(@RequestParam String token) {
+        try {
+            authService.validateActivationToken(token);
+            return ResponseEntity.ok("User activated successfully, now you can login");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Failed to activate user");
         }
     }
 

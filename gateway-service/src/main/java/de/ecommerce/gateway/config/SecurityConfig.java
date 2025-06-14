@@ -13,6 +13,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
  * This class is responsible for configuring the security settings of the application.
+ *
  * @author EgorBusuioc
  * 27.05.2025
  */
@@ -26,9 +27,9 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/**").permitAll()
                         .pathMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/admin/**").hasRole("ADMIN")
-                        .pathMatchers(HttpMethod.GET, "/auth/kafka/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -48,6 +49,7 @@ public class SecurityConfig {
 
         JwtAuthenticationConverter authConverter = new JwtAuthenticationConverter();
         authConverter.setJwtGrantedAuthoritiesConverter(converter);
+
         return new ReactiveJwtAuthenticationConverterAdapter(authConverter);
     }
 }
