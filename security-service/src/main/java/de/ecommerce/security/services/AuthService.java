@@ -2,6 +2,7 @@ package de.ecommerce.security.services;
 
 import de.ecommerce.security.dto.EmailRequest;
 import de.ecommerce.security.dto.LoginRequest;
+import de.ecommerce.security.dto.enums.RequestType;
 import de.ecommerce.security.models.PersonalUserToken;
 import de.ecommerce.security.models.User;
 import de.ecommerce.security.models.enums.Role;
@@ -105,7 +106,15 @@ public class AuthService {
 
         log.info("Token generated and saved for user: {}", user.getEmail());
 
-        restTemplate.postForEntity("http://notification-service/mail/auth/activate-account", new EmailRequest(user.getEmail(), personalUserToken.getToken()), String.class);
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), personalUserToken.getToken(), RequestType.NOT_EXISTING_USER));
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("Failed to send user to Kafka topic: {}", ex.getMessage());
+                throw new RuntimeException("Failed to send user to Kafka topic");
+            } else {
+                log.info("User sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
+            }
+        });
         log.info("Activation link sent to user: {}", user.getEmail());
     }
 
@@ -136,17 +145,5 @@ public class AuthService {
 
     private boolean isTokenExpired(PersonalUserToken passwordToken) {
         return passwordToken.getExpirationDate().isBefore(LocalDateTime.now());
-    }
-
-    public void sendUserToKafka(String userId) throws RuntimeException {
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("user-topic", userId);
-        future.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.error("Failed to send user to Kafka topic: {}", ex.getMessage());
-                throw new RuntimeException("Failed to send user to Kafka topic");
-            } else {
-                log.info("User sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
-            }
-        });
     }
 }

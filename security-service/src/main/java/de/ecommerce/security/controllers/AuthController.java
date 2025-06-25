@@ -81,15 +81,4 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Failed to activate user");
         }
     }
-
-    @GetMapping("/kafka/{userId}")
-    public ResponseEntity<?> tryKafta(@PathVariable String userId) {
-        try {
-            authService.sendUserToKafka(userId);
-            return ResponseEntity.ok("User sent to Kafka successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send user to Kafka");
-        }
-    }
 }
-
