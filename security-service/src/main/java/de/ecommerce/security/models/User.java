@@ -69,6 +69,7 @@ public class User implements UserDetails {
     @JoinColumn(name = "token_id")
     private PersonalUserToken token;
 
+    @PrePersist
     public void init(){
         ULID ulid = new ULID();
         this.userId = ulid.nextULID();

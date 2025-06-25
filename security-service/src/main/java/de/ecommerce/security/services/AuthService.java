@@ -19,7 +19,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -41,7 +40,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JWTUtils jwtUtils;
-    private final RestTemplate restTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
@@ -61,7 +59,6 @@ public class AuthService {
 
         user.setRole(Role.ROLE_USER); // Set the user as USER by default
         user.setPassword(passwordEncoder.encode(user.getPassword())); // Encoding the password
-        user.init();
 
         //sendUserToKafka(user.getUserId());
         userRepository.save(user); // Saving the user into the database
@@ -107,6 +104,17 @@ public class AuthService {
         log.info("Token generated and saved for user: {}", user.getEmail());
 
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), personalUserToken.getToken(), RequestType.NOT_EXISTING_USER));
+        tryToSendMessageToKafka(user, future);
+        log.info("Activation link sent to user: {}", user.getEmail());
+    }
+
+    protected void sendThanksEmail(User user) {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), null, RequestType.ALREADY_ACTIVATED_USER));
+        tryToSendMessageToKafka(user, future);
+        log.info("Thanking Email was sent to User: {}", user.getEmail());
+    }
+
+    private void tryToSendMessageToKafka(User user, CompletableFuture<SendResult<String, Object>> future) {
         future.whenComplete((result, ex) -> {
             if (ex != null) {
                 log.error("Failed to send user to Kafka topic: {}", ex.getMessage());
@@ -115,7 +123,6 @@ public class AuthService {
                 log.info("User sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
             }
         });
-        log.info("Activation link sent to user: {}", user.getEmail());
     }
 
     @Transactional
@@ -135,6 +142,7 @@ public class AuthService {
         user.setToken(null);
         userRepository.save(user);
         log.info("User has been activated: {}", user.getEmail());
+        sendThanksEmail(user);
 
         log.info("Token has been removed from user: {}", passwordToken.getUser().getEmail());
     }

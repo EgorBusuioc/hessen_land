@@ -26,6 +26,11 @@ public class KafkaConfig {
     }
 
     @Bean
+    public NewTopic userSendingEvent() {
+        return new NewTopic("user-sending-events", 3, (short) 1);
+    }
+
+    @Bean
     public Map<String, Object> producerConfigs() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,

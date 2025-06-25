@@ -31,7 +31,6 @@ public class AuthService {
         if (activate.getRequestType().equals(RequestType.ALREADY_ACTIVATED_USER))
             mailSender.send(alreadyActivatedUserMailSender(message));
 
-        //TODO finish this part
         if (activate.getRequestType().equals(RequestType.NOT_EXISTING_USER))
             mailSender.send(notExistingUserMailSender(message, activate));
 
@@ -40,10 +39,12 @@ public class AuthService {
 
     private SimpleMailMessage alreadyActivatedUserMailSender(SimpleMailMessage email) {
         email.setSubject("Thank you for activating your account");
-        email.setText("Thank you for activating your account, now you can log in to your account.\n" +
-                "If you have any questions, please contact our support team.\n\n" +
-                "Best regards,\n" +
-                "E-commerce Team");
+        email.setText("""
+                Thank you for activating your account, now you can log in to your account.
+                If you have any questions, please contact our support team.
+                
+                Best regards,
+                HessenLand Team""");
         return email;
     }
 
