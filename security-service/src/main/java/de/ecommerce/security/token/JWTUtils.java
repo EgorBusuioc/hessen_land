@@ -60,6 +60,7 @@ public class JWTUtils {
                 .withSubject("User details")
                 .withClaim("username", user.getUsername())
                 .withClaim("role", user.getRole().name())
+                .withClaim("userId", user.getUserId())
                 .withIssuedAt(new Date())
                 .withIssuer("BUSUIOC-SECURITY")
                 .withExpiresAt(expirationDate)

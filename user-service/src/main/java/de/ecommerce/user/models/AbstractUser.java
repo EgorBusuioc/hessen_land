@@ -3,6 +3,8 @@ package de.ecommerce.user.models;
 import de.ecommerce.user.models.roles.Gender;
 import de.ecommerce.user.models.roles.Role;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author EgorBusuioc
@@ -11,7 +13,9 @@ import jakarta.persistence.*;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class User {
+@Getter
+@Setter
+public abstract class AbstractUser {
 
     @Id
     @Column(name = "user_id")

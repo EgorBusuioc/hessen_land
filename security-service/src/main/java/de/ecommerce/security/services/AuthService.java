@@ -1,7 +1,9 @@
 package de.ecommerce.security.services;
 
+import de.ecommerce.security.dto.CitizenUserDTO;
 import de.ecommerce.security.dto.EmailRequest;
 import de.ecommerce.security.dto.LoginRequest;
+import de.ecommerce.security.dto.RegistrationDTO;
 import de.ecommerce.security.dto.enums.RequestType;
 import de.ecommerce.security.models.PersonalUserToken;
 import de.ecommerce.security.models.User;
@@ -11,6 +13,7 @@ import de.ecommerce.security.repositories.UserTokenRepository;
 import de.ecommerce.security.token.JWTUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,6 +44,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JWTUtils jwtUtils;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ModelMapper modelMapper;
 
     /**
      * Registers a new user in the system.
@@ -49,21 +53,21 @@ public class AuthService {
      * role to {@code ROLE_USER}, encrypts the password, and persists the user to the database.
      * </p>
      *
-     * @param user the user object to be registered
+     * @param userDTO the user object to be registered
      * @throws IllegalArgumentException\ if a user with the same email already exists
      */
     @Transactional
-    public void registerNewUser(User user) throws IllegalArgumentException{
-        if (userRepository.findByEmail(user.getEmail()).isPresent())
+    public void registerNewUser(RegistrationDTO userDTO) throws IllegalArgumentException{
+        if (userRepository.findByEmail(userDTO.getEmail()).isPresent())
             throw new IllegalArgumentException("A user with this email already exists.");
 
-        user.setRole(Role.ROLE_USER); // Set the user as USER by default
+        User user = modelMapper.map(userDTO, User.class);
         user.setPassword(passwordEncoder.encode(user.getPassword())); // Encoding the password
-
-        //sendUserToKafka(user.getUserId());
         userRepository.save(user); // Saving the user into the database
         log.info("User created: Email: {}", user.getEmail());
         sendActivationLink(user);
+        user.setRole(Role.CITIZEN);
+        sendUserToKafka(modelMapper.map(user, CitizenUserDTO.class));
         log.info("User's activation link has been sent to: {}", user.getEmail());
     }
 
@@ -104,17 +108,23 @@ public class AuthService {
         log.info("Token generated and saved for user: {}", user.getEmail());
 
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), personalUserToken.getToken(), RequestType.NOT_EXISTING_USER));
-        tryToSendMessageToKafka(user, future);
+        tryToSendMessageToKafka(future);
         log.info("Activation link sent to user: {}", user.getEmail());
+    }
+
+    private void sendUserToKafka(CitizenUserDTO user) {
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("user-sending-events", user);
+        tryToSendMessageToKafka(future);
+        log.info("User has been sent to Kafka topic: {}", user.getEmail());
     }
 
     protected void sendThanksEmail(User user) {
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), null, RequestType.ALREADY_ACTIVATED_USER));
-        tryToSendMessageToKafka(user, future);
+        tryToSendMessageToKafka(future);
         log.info("Thanking Email was sent to User: {}", user.getEmail());
     }
 
-    private void tryToSendMessageToKafka(User user, CompletableFuture<SendResult<String, Object>> future) {
+    private void tryToSendMessageToKafka(CompletableFuture<SendResult<String, Object>> future) {
         future.whenComplete((result, ex) -> {
             if (ex != null) {
                 log.error("Failed to send user to Kafka topic: {}", ex.getMessage());

@@ -33,11 +33,11 @@ public class KafkaConfig {
         props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
-        props.put(JsonDeserializer.TYPE_MAPPINGS, "de.ecommerce.security.dto.EmailRequest:de.ecommerce.notification.dto.EmailRequest");
+        props.put(JsonDeserializer.TYPE_MAPPINGS, "de.ecommerce.security.dto.CitizenUserDTO:de.ecommerce.user.models.CitizenUser");
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
 
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "user-service");
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "user-service-client");
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         return props;
     }
 

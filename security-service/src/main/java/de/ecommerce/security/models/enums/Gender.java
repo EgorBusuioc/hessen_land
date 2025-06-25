@@ -2,9 +2,8 @@ package de.ecommerce.security.models.enums;
 
 /**
  * @author EgorBusuioc
- * 27.05.2025
+ * 25.06.2025
  */
-public enum Role {
-    ROLE_ADMIN,
-    CITIZEN
+public enum Gender {
+    MALE, FEMALE, OTHER
 }

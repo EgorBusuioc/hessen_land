@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class Registrar extends User{
+public class Registrar extends AbstractUser{
 
     @Column(name = "work_number", unique = true, length = 10)
     private String workNumber;

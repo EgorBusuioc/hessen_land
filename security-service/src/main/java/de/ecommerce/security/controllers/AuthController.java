@@ -1,7 +1,7 @@
 package de.ecommerce.security.controllers;
 
 import de.ecommerce.security.dto.LoginRequest;
-import de.ecommerce.security.models.User;
+import de.ecommerce.security.dto.RegistrationDTO;
 import de.ecommerce.security.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class AuthController {
      * @return a response entity with the registration status
      */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody User user, BindingResult bindingResult) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegistrationDTO user, BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) { // Checking if the user has any validation errors
             List<ObjectError> errors = bindingResult.getAllErrors();
