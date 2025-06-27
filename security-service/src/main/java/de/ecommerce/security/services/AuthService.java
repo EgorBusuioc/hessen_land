@@ -97,6 +97,18 @@ public class AuthService {
         }
     }
 
+    /**
+     * Handles a password reset request for a user.
+     * <p>
+     * This method checks if the user exists based on the provided email. If the user already has an activation
+     * or reset token, an exception is thrown. Otherwise, a new reset password token is generated and a reset
+     * password link is sent to the user's email.
+     * </p>
+     *
+     * @param email the email of the user requesting a password reset
+     * @throws UsernameNotFoundException if the user with the provided email does not exist
+     * @throws IllegalStateException if the user already has an activation or reset token
+     */
     @Transactional
     public void resetPasswordRequest(String email) {
         User user = userRepository.findByEmail(email)
@@ -110,6 +122,16 @@ public class AuthService {
         sentResetPasswordLink(user, resetPasswordToken);
     }
 
+    /**
+     * Sends a reset password link to the user.
+     * <p>
+     * This method creates a reset password token, saves it in the database, and sends an event to Kafka
+     * to deliver the reset password link to the user's email.
+     * </p>
+     *
+     * @param user the user object to whom the reset password link will be sent
+     * @param resetPasswordToken the token for resetting the password
+     */
     @Transactional
     protected void sentResetPasswordLink(User user, String resetPasswordToken) {
         PersonalUserToken personalUserToken = new PersonalUserToken(resetPasswordToken, user);
@@ -123,6 +145,18 @@ public class AuthService {
         log.info("Reset password link sent to user: {}", user.getEmail());
     }
 
+    /**
+     * Validates the reset password token and updates the user's password.
+     * <p>
+     * This method checks if the provided token exists and is not expired. If valid, it updates the user's password
+     * and removes the token from the user. If the token is invalid or expired, an exception is thrown.
+     * </p>
+     *
+     * @param token the reset password token to be validated
+     * @param password the new password to be set for the user
+     * @throws UsernameNotFoundException if the token is not found or the user does not exist
+     * @throws Exception if the token is expired
+     */
     @Transactional
     public void validateResetPasswordToken(String token, String password) throws Exception {
         final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);
@@ -159,18 +193,45 @@ public class AuthService {
         log.info("Activation link sent to user: {}", user.getEmail());
     }
 
+    /**
+     * Sends an activation link to the user.
+     * <p>
+     * This method generates a unique activation token, saves it in the database, and sends an event to Kafka
+     * to deliver the activation link to the user's email.
+     * </p>
+     *
+     * @param user the user object to whom the activation link will be sent
+     */
     private void sendUserToKafka(CitizenUserDTO user) {
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("user-sending-events", user);
         tryToSendMessageToKafka(future);
         log.info("User has been sent to Kafka topic: {}", user.getEmail());
     }
 
+    /**
+     * Sends a thank-you email to the user.
+     * <p>
+     * This method sends an event to Kafka to deliver a thank-you email to the user's email address
+     * after the user has been successfully activated.
+     * </p>
+     *
+     * @param user the user object to whom the thank-you email will be sent
+     */
     protected void sendThanksEmail(User user) {
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events",  new EmailRequest(user.getEmail(), null, RequestType.ALREADY_ACTIVATED_USER));
         tryToSendMessageToKafka(future);
         log.info("Thanking Email was sent to User: {}", user.getEmail());
     }
 
+    /**
+     * Sends a thank-you email to the user.
+     * <p>
+     * This method sends an event to Kafka to deliver a thank-you email to the user's email address
+     * after the user has been successfully activated.
+     * </p>
+     *
+     * @param future the user object to whom the thank-you email will be sent
+     */
     private void tryToSendMessageToKafka(CompletableFuture<SendResult<String, Object>> future) {
         future.whenComplete((result, ex) -> {
             if (ex != null) {
@@ -182,6 +243,17 @@ public class AuthService {
         });
     }
 
+    /**
+     * Validates the activation token and activates the user.
+     * <p>
+     * This method checks if the provided token exists and is not expired. If valid, it activates the user,
+     * removes the token, and sends a thank-you email. If the token is invalid or expired, an exception is thrown.
+     * </p>
+     *
+     * @param token the activation token to be validated
+     * @throws UsernameNotFoundException if the token is not found
+     * @throws Exception if the token is expired
+     */
     @Transactional
     public void validateActivationToken(String token) throws Exception {
         final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);

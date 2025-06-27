@@ -5,15 +5,14 @@ import de.ecommerce.security.dto.RegistrationDTO;
 import de.ecommerce.security.dto.ResetPassword;
 import de.ecommerce.security.dto.ResetPasswordRequest;
 import de.ecommerce.security.services.AuthService;
+import de.ecommerce.security.services.BindingResultService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 /**
  * Controller for handling authentication and registration requests.
@@ -26,6 +25,7 @@ import java.util.List;
 public class AuthController {
 
     private final AuthService authService;
+    private final BindingResultService bindingResultService;
 
     /**
      * Registers a new user with the provided details.
@@ -37,13 +37,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegistrationDTO user, BindingResult bindingResult) {
 
-        if (bindingResult.hasErrors()) { // Checking if the user has any validation errors
-            List<ObjectError> errors = bindingResult.getAllErrors();
-            StringBuilder builder = new StringBuilder();
-            for (ObjectError error : errors) {
-                builder.append(error.getDefaultMessage()).append("\n");
-            }
-            return ResponseEntity.badRequest().body(builder.toString());
+        ResponseEntity<String> errorResponse = bindingResultService.getErrorMessage(bindingResult);
+        if (errorResponse.getStatusCode().isError()) {
+            return errorResponse;
         }
 
         try {
@@ -73,7 +69,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
+    /**
+     * Activates a user account based on the provided activation token.
+     * <p>
+     * This endpoint validates the activation token and activates the user account if the token is valid.
+     * If the token is invalid or expired, it returns a forbidden status with an error message.
+     * </p>
+     *
+     * @param token the activation token provided by the user
+     * @return {@link ResponseEntity} containing a success message if activation is successful,
+     *         or a forbidden status with an error message if activation fails
+     */
     @GetMapping("/activate-account")
     public ResponseEntity<String> activateUser(@RequestParam String token) {
         try {
@@ -84,6 +90,17 @@ public class AuthController {
         }
     }
 
+    /**
+     * Handles a password reset request for a user.
+     * <p>
+     * This method accepts the user's email, generates a reset password token,
+     * and sends a reset password link to the provided email address.
+     * </p>
+     *
+     * @param request the object containing the user's email
+     * @return {@link ResponseEntity} with a success message if the link is sent successfully,
+     *         or an error message if the operation fails
+     */
     @PostMapping("/password/reset-password-request")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
         try {
@@ -94,17 +111,23 @@ public class AuthController {
         }
     }
 
+    /**
+     * Changes the user's password using the provided reset token and new password.
+     * <p>
+     * This endpoint validates the reset token and updates the user's password if the token is valid.
+     * If the token is invalid or expired, it returns an error message.
+     * </p>
+     *
+     * @param request the object containing the reset token and new password
+     * @param bindingResult the result of the validation
+     * @return {@link ResponseEntity} with a success message if the password is reset successfully,
+     *         or an error message if the operation fails
+     */
     @PostMapping("/password/change-password")
     public ResponseEntity<String> changePassword(@RequestBody ResetPassword request, BindingResult bindingResult) {
-        //TODO After all work is done, add documentation
-        //TODO migrate this peace of code to BindingResultService
-        if (bindingResult.hasErrors()) {
-            List<ObjectError> errors = bindingResult.getAllErrors();
-            StringBuilder builder = new StringBuilder();
-            for (ObjectError error : errors) {
-                builder.append(error.getDefaultMessage()).append("\n");
-            }
-            return ResponseEntity.badRequest().body(builder.toString());
+        ResponseEntity<String> errorResponse = bindingResultService.getErrorMessage(bindingResult);
+        if (errorResponse.getStatusCode().isError()) {
+            return errorResponse;
         }
 
         try {
