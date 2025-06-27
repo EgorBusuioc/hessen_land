@@ -36,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-    //TODO delete account if account is not activated and does not have any activation tokens.
     private final UserRepository userRepository;
     private final UserTokenRepository userTokenRepository;
 
@@ -96,6 +95,54 @@ public class AuthService {
             log.warn("Authentication failed for user: {}", loginRequest.getEmail());
             throw new IllegalArgumentException("Invalid email or password");
         }
+    }
+
+    @Transactional
+    public void resetPasswordRequest(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User with this email does not exist"));
+
+        if (user.getToken() != null) {
+            log.error("User with email {} already has an activation or reset token", email);
+            throw new IllegalStateException("User already has an activation token.");
+        }
+        String resetPasswordToken = UUID.randomUUID().toString();
+        sentResetPasswordLink(user, resetPasswordToken);
+    }
+
+    @Transactional
+    protected void sentResetPasswordLink(User user, String resetPasswordToken) {
+        PersonalUserToken personalUserToken = new PersonalUserToken(resetPasswordToken, user);
+        user.setToken(personalUserToken);
+        userRepository.save(user);
+
+        log.info("Reset password token generated and saved for user: {}", user.getEmail());
+
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("email-events", new EmailRequest(user.getEmail(), personalUserToken.getToken(), RequestType.RESET_PASSWORD));
+        tryToSendMessageToKafka(future);
+        log.info("Reset password link sent to user: {}", user.getEmail());
+    }
+
+    @Transactional
+    public void validateResetPasswordToken(String token, String password) throws Exception {
+        final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);
+
+        if (!isTokenFound(passwordToken))
+            throw new UsernameNotFoundException("Token not found");
+
+        if (isTokenExpired(passwordToken)) {
+            log.error("Token expired for user: {}", passwordToken.getUser().getEmail());
+            throw new Exception("Token expired");
+        }
+
+        User user = userRepository.findByToken(passwordToken)
+                .orElseThrow(() -> new UsernameNotFoundException("User with this token does not exist"));
+
+        user.setPassword(passwordEncoder.encode(password)); // Encoding the new password
+        user.setToken(null);
+        userRepository.save(user);
+
+        log.info("User - {} changed his password.", user.getEmail());
     }
 
     @Transactional

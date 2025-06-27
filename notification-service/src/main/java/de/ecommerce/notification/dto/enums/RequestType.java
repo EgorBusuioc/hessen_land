@@ -7,4 +7,5 @@ package de.ecommerce.notification.dto.enums;
 public enum RequestType {
     NOT_EXISTING_USER,
     ALREADY_ACTIVATED_USER,
+    RESET_PASSWORD
 }

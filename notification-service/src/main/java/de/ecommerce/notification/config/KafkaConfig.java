@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -20,6 +21,7 @@ import java.util.Map;
  * 14.06.2025
  */
 @Configuration
+@EnableKafka
 public class KafkaConfig {
 
     @Bean
@@ -33,8 +35,7 @@ public class KafkaConfig {
         props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
-        props.put(JsonDeserializer.TYPE_MAPPINGS,
-                "de.ecommerce.security.dto.EmailRequest:de.ecommerce.notification.dto.EmailRequest");
+        props.put(JsonDeserializer.TYPE_MAPPINGS, "email:de.ecommerce.notification.dto.EmailRequest");
 
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service");
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, "notification-service-client");

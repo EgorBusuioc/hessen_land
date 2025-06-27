@@ -39,6 +39,10 @@ public class KafkaConfig {
                 StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 JsonSerializer.class);
+        props.put(JsonSerializer.TYPE_MAPPINGS,
+                "email:de.ecommerce.security.dto.EmailRequest," +
+                        "citizen:de.ecommerce.security.dto.CitizenUserDTO");
+        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, true);
         return props;
     }
 

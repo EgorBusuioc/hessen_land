@@ -34,6 +34,9 @@ public class AuthService {
         if (activate.getRequestType().equals(RequestType.NOT_EXISTING_USER))
             mailSender.send(notExistingUserMailSender(message, activate));
 
+        if (activate.getRequestType().equals(RequestType.RESET_PASSWORD))
+            mailSender.send(resetPasswordLinkSender(message, activate));
+
         log.info("Activation link sent to: {}", activate.getEmail());
     }
 
@@ -51,9 +54,18 @@ public class AuthService {
     private SimpleMailMessage notExistingUserMailSender(SimpleMailMessage email, EmailRequest activate) {
         email.setSubject("Activate your account");
         email.setText("\nHi, you've just created account in our service, please go to link below and activate your account:\n" +
-                "http://localhost:8081/auth/password/activate-account?token=" + activate.getToken() +
+                "http://localhost:8081/auth/activate-account?token=" + activate.getToken() +
                 "\nActivation link will be valid for 2 hours.\n\n" +
                 "\n\nIf you didn't create an account, please ignore this email.\n");
         return email;
     }
+
+    private SimpleMailMessage resetPasswordLinkSender(SimpleMailMessage email, EmailRequest activate) {
+        email.setSubject("Reset your password");
+        email.setText("\nHi, you requested to reset your password, please go to link below and reset your password:\n" +
+                "http://localhost:8081/auth/password/reset?token=" + activate.getToken() +
+                "\nReset link will be valid for 2 hours.\n\n" +
+                "\n\nIf you didn't request to reset your password, please ignore this email.\n");
+        return email;
+    };
 }

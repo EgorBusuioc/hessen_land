@@ -55,7 +55,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize ->
                         authorize
-                                .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register", "/auth/password/reset-password-request", "auth/password/change-password").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/auth/password/activate-account").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/auth/kafka/**").permitAll()
                                 .anyRequest().authenticated());
