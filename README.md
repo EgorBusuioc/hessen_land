@@ -56,7 +56,7 @@ Isolation is especially visible during the registration process. When a user sub
   "gender": "MALE"
 }
 ```
-However, only two fields — **email** and **password** — are stored in the security-service.
+However, only two fields — `email` and `password` — are stored in the security-service.
 The remaining data is published to Kafka and consumed by the user-service, where it is processed, encrypted using AES, and stored in a separate database.
 
 #### 📧 Account Confirmation and Password Recovery
@@ -65,3 +65,8 @@ After registration, an account activation link is sent to the user's email. Unti
 Password recovery via email is also implemented.
 It’s important to note that the security-service communicates with the notification-service exclusively through Kafka. The notification-service does not expose any public HTTP endpoints, preventing any external interference with its operations.
 
+## 🧱 What's Next?
+
+I am currently working on the implementation of the `user-service`, which handles the management of citizen and registrar profiles.
+After registration, registrars will receive a notification about the new user and will be able to view the user's profile and verify it.
+Only after verification will the user be able to access the system and use its services.
