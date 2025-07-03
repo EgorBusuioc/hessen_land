@@ -161,7 +161,7 @@ public class AuthService {
     public void validateResetPasswordToken(String token, String password) throws Exception {
         final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);
 
-        if (!isTokenFound(passwordToken))
+        if (isTokenFound(passwordToken))
             throw new UsernameNotFoundException("Token not found");
 
         if (isTokenExpired(passwordToken)) {
@@ -235,10 +235,10 @@ public class AuthService {
     private void tryToSendMessageToKafka(CompletableFuture<SendResult<String, Object>> future) {
         future.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.error("Failed to send user to Kafka topic: {}", ex.getMessage());
-                throw new RuntimeException("Failed to send user to Kafka topic");
+                log.error("Failed to send data to Kafka topic: {}", ex.getMessage());
+                throw new RuntimeException("Failed to send data to Kafka topic");
             } else {
-                log.info("User sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
+                log.info("Data sent to Kafka topic successfully: {}", result.getRecordMetadata().offset());
             }
         });
     }
@@ -258,7 +258,7 @@ public class AuthService {
     public void validateActivationToken(String token) throws Exception {
         final PersonalUserToken passwordToken = userTokenRepository.findByToken(token).orElse(null);
 
-        if (!isTokenFound(passwordToken))
+        if (isTokenFound(passwordToken))
             throw new UsernameNotFoundException("Token not found");
 
         if (isTokenExpired(passwordToken)) {
@@ -277,7 +277,7 @@ public class AuthService {
     }
 
     private boolean isTokenFound(PersonalUserToken passwordToken) {
-        return passwordToken != null && passwordToken.getUser() != null;
+        return passwordToken == null || passwordToken.getUser() == null;
     }
 
     private boolean isTokenExpired(PersonalUserToken passwordToken) {
