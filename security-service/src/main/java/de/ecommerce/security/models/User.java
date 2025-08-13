@@ -63,8 +63,7 @@ public class User implements UserDetails {
     @Transient
     private Gender gender;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "token_id")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private PersonalUserToken token;
 
     @PrePersist

@@ -26,7 +26,8 @@ public class PersonalUserToken {
     @Column(name = "token", unique = true)
     private String token;
 
-    @OneToOne(mappedBy = "token")
+    @OneToOne
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "expiration_date")
