@@ -26,10 +26,12 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
+                        // Security Service endpoints.
                         .pathMatchers(HttpMethod.POST, "/auth/login", "/auth/register", "/auth/password/reset-password-request", "/auth/password/change-password").permitAll()
                         .pathMatchers(HttpMethod.GET, "/auth/**").permitAll()
                         .pathMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .pathMatchers("/admin/**").hasRole("ADMIN")
+                        .pathMatchers("/actuator/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(ex -> ex
