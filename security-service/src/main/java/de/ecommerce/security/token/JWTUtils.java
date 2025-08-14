@@ -23,7 +23,6 @@ import java.util.Date;
 @Component
 @Slf4j
 public class JWTUtils {
-
     /**
      * Takes the private key from the resources folder and loads it
      * @throws Exception if the key cannot be loaded
@@ -57,13 +56,11 @@ public class JWTUtils {
         }
 
         return JWT.create()
-                .withSubject("User details")
-                .withClaim("username", user.getUsername())
+                .withClaim("id", user.getUserId())
                 .withClaim("role", user.getRole().name())
-                .withClaim("userId", user.getUserId())
                 .withIssuedAt(new Date())
-                .withIssuer("BUSUIOC-SECURITY")
                 .withExpiresAt(expirationDate)
+                .withIssuer("BUSUIOC-SECURITY")
                 .sign(Algorithm.RSA256(null, privateKey));
     }
 }

@@ -5,5 +5,5 @@ package de.ecommerce.user.models.roles;
  * 25.06.2025
  */
 public enum Role {
-    CITIZEN, REGISTRAR
+    CITIZEN, REGISTRAR, ADMIN
 }

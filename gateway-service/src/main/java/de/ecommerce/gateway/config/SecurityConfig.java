@@ -29,9 +29,11 @@ public class SecurityConfig {
                         // Security Service endpoints.
                         .pathMatchers(HttpMethod.POST, "/auth/login", "/auth/register", "/auth/password/reset-password-request", "/auth/password/change-password").permitAll()
                         .pathMatchers(HttpMethod.GET, "/auth/**").permitAll()
-                        .pathMatchers("/user/**").hasAnyRole("USER", "ADMIN")
-                        .pathMatchers("/admin/**").hasRole("ADMIN")
                         .pathMatchers("/actuator/**").permitAll()
+
+                        // TEST endpoints.
+                        .pathMatchers("/test/user").hasAnyRole("CITIZEN", "REGISTRAR")
+
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -47,7 +49,7 @@ public class SecurityConfig {
     private ReactiveJwtAuthenticationConverterAdapter grantedAuthoritiesExtractor() {
         JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
         converter.setAuthoritiesClaimName("role");
-        converter.setAuthorityPrefix("");
+        converter.setAuthorityPrefix("ROLE_");
 
         JwtAuthenticationConverter authConverter = new JwtAuthenticationConverter();
         authConverter.setJwtGrantedAuthoritiesConverter(converter);

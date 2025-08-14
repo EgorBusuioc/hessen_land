@@ -36,12 +36,12 @@ public class JWTGlobalFilter implements GlobalFilter, Ordered {
         String jwtToken = authHeader.substring(7);
 
         return jwtDecoder.decode(jwtToken).flatMap(token -> {
-            String userEmail = token.getClaimAsString("username");
+            String userEmail = token.getClaimAsString("id");
             String userRole = token.getClaimAsString("role");
 
             ServerHttpRequest request = exchange.getRequest().mutate()
-                    .header("X-User-Email", userEmail)
-                    .header("X-User-Role", userRole)
+                    .header("X-USER-ID", userEmail)
+                    .header("X-USER-ROLE", userRole)
                     .build();
 
             return chain.filter(exchange.mutate().request(request).build());

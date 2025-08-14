@@ -5,6 +5,7 @@ package de.ecommerce.security.models.enums;
  * 27.05.2025
  */
 public enum Role {
-    ROLE_ADMIN,
-    CITIZEN
+    CITIZEN,
+    REGISTRAR,
+    ADMIN
 }

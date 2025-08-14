@@ -14,6 +14,10 @@ spring:
           uri: lb://security-service
           predicates:
             - Path=/auth/**, /actuator/**
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/test/user/** # Example path for user service
   security:
     oauth2:
       resourceserver:
