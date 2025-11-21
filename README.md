@@ -3,7 +3,7 @@
 This project was inspired by various sources with the goal of creating an online platform for managing, updating, and monitoring personal data of Hessen residents.
 It provides digital access to a wide range of public services — such as online civil signatures, vaccine certificate requests, registration of movable and immovable property, and much more.
 
-## 🧱 Architecture
+## Architecture
 
 This project follows a **true microservice architecture**, where each service is an independently deployed and scalable application.  
 Services communicate through **Apache Kafka** and are registered via **Eureka Discovery**.  
@@ -19,7 +19,7 @@ Each service is responsible for a well-defined domain:
 
 > This application is being developed with the goal of ensuring high scalability and fault tolerance.
 
-## 🛠️ Technologies
+## Technologies
 
 | Category        | Technologies                                                                    |
 |-----------------|--------------------------------------------------------------------------------|
@@ -31,8 +31,8 @@ Each service is responsible for a well-defined domain:
 | DevOps          | Docker, Docker Compose                                                         |
 | Other           | Lombok, ModelMapper, MapStruct                                                 |
 
-## 🗺️ Services
-### 🔐 Security and Component Isolation
+## Services
+### Security and Component Isolation
 
 This project is designed with a focus on isolated and secure architecture, where each microservice has a strictly defined responsibility and no direct external access.
 
@@ -41,7 +41,7 @@ If an endpoint requires authentication, the **security module inside the Gateway
 
 ---
 
-#### 🧾 Registration Process
+#### Registration Process
 
 Isolation is especially visible during the registration process. When a user submits their registration data, it looks something like this:
 
@@ -59,13 +59,13 @@ Isolation is especially visible during the registration process. When a user sub
 However, only two fields — `email` and `password` — are stored in the security-service.
 The remaining data is published to Kafka and consumed by the user-service, where it is processed, encrypted using AES, and stored in a separate database.
 
-#### 📧 Account Confirmation and Password Recovery
+#### Account Confirmation and Password Recovery
 After registration, an account activation link is sent to the user's email. Until the account is activated, it is considered inactive and cannot be used for authentication.
 
 Password recovery via email is also implemented.
 It’s important to note that the security-service communicates with the notification-service exclusively through Kafka. The notification-service does not expose any public HTTP endpoints, preventing any external interference with its operations.
 
-## 🧱 What's Next?
+## What's Next?
 
 I am currently working on the implementation of the `user-service`, which handles the management of citizen and registrar profiles.
 After registration, registrars will receive a notification about the new user and will be able to view the user's profile and verify it.
